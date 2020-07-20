@@ -116,6 +116,7 @@ int HelloHttpsClient::run()
     saddr.set_port(server_port);
     if ((ret = socket.connect(saddr)) != NSAPI_ERROR_OK) {
         mbedtls_printf("socket.connect() returned %d\n", ret);
+        network->disconnect();
         return ret;
     }
     mbedtls_printf("Successfully connected to %s at port %u\n",
@@ -130,6 +131,7 @@ int HelloHttpsClient::run()
             ret == MBEDTLS_ERR_SSL_WANT_WRITE));
     if (ret < 0) {
         mbedtls_printf("mbedtls_ssl_handshake() returned -0x%04X\n", -ret);
+        network->disconnect();
         return ret;
     }
     mbedtls_printf("Successfully completed the TLS handshake\n");
@@ -142,6 +144,7 @@ int HelloHttpsClient::run()
     if (ret < 0 || req_len >= sizeof(gp_buf)) {
         mbedtls_printf("Failed to compose HTTP request using snprintf: %d\n",
                        ret);
+        network->disconnect();
         return ret;
     }
 
@@ -160,6 +163,7 @@ int HelloHttpsClient::run()
           ret == MBEDTLS_ERR_SSL_WANT_READ));
     if (ret < 0) {
         mbedtls_printf("mbedtls_ssl_write() returned -0x%04X\n", -ret);
+        network->disconnect();
         return ret;
     }
 
@@ -168,6 +172,7 @@ int HelloHttpsClient::run()
                                 "\r  ", mbedtls_ssl_get_peer_cert(&ssl));
     if (ret < 0) {
         mbedtls_printf("mbedtls_x509_crt_info() returned -0x%04X\n", -ret);
+        network->disconnect();
         return ret;
     }
     mbedtls_printf("Server certificate:\n%s\n", gp_buf);
@@ -180,10 +185,12 @@ int HelloHttpsClient::run()
         if (ret < 0) {
             mbedtls_printf("mbedtls_x509_crt_verify_info() returned "
                            "-0x%04X\n", -ret);
+            network->disconnect();
             return ret;
         } else {
             mbedtls_printf("Certificate verification failed (flags %lu):"
                            "\n%s\n", flags, gp_buf);
+            network->disconnect();
             return -1;
         }
     } else {
@@ -214,6 +221,7 @@ int HelloHttpsClient::run()
             ret == MBEDTLS_ERR_SSL_WANT_READ || MBEDTLS_ERR_SSL_WANT_WRITE));
     if (ret < 0) {
         mbedtls_printf("mbedtls_ssl_read() returned -0x%04X\n", -ret);
+        network->disconnect();
         return ret;
     }
 
